@@ -380,7 +380,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       pendingPlay: r.pendingPlay ? { ...r.pendingPlay, cardIds: r.pendingPlay.cardIds || [], passedBy: r.pendingPlay.passedBy || [] } : null,
       lastReveal: r.lastReveal ? { ...r.lastReveal, cardIds: r.lastReveal.cardIds || [] } : null,
       winner: r.winner || null,
-      firstPlayMade: r.firstPlayMade || false
+      firstPlayMade: r.firstPlayMade || false,
+      peanutButter: r.peanutButter || null
     };
   }
   const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
@@ -432,9 +433,15 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     const playerName = players[playerIdx]?.name || "someone";
     let winner = current.winner;
     let lastReveal = null;
+    let peanutButter = current.peanutButter || null;
     if (mode === "stands") {
+      const wasLie = !pp.cardIds.every((c) => rankOf(c) === pp.claimedRank);
       pile = [...pile, ...pp.cardIds];
       log.push({ text: `No challenge \u2014 ${pp.count} card(s) join the pile (${pile.length} total).`, ts: Date.now() });
+      if (wasLie) {
+        log.push({ text: `\u{1F95C} ${playerName} says "Peanut butter!" \u2014 that play was a bluff that got away with it.`, ts: Date.now() });
+        peanutButter = { name: playerName, timestamp: Date.now() };
+      }
     } else {
       const allMatch = pp.cardIds.every((c) => rankOf(c) === pp.claimedRank);
       const callerName = players.find((p) => p.id === callerId)?.name || "someone";
@@ -470,6 +477,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       log: log.slice(-14),
       pendingPlay: null,
       lastReveal,
+      peanutButter,
       turnIndex: winner ? current.turnIndex : nextIndex,
       requiredRank: winner ? current.requiredRank : nextRank(pp.claimedRank),
       winner
@@ -545,7 +553,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           0% { left: 50%; top: 50%; opacity: 1; transform: translate(-50%,-50%) scale(1) rotate(0deg); }
           100% { left: var(--fly-x); top: var(--fly-y); opacity: 0; transform: translate(-50%,-50%) scale(0.55) rotate(25deg); }
         }
-      `), children, /* @__PURE__ */ React.createElement("div", { style: { position: "fixed", bottom: 6, right: 10, fontSize: 10, opacity: 0.35, fontFamily: "'JetBrains Mono', monospace" } }, "build v9"));
+      `), children, /* @__PURE__ */ React.createElement("div", { style: { position: "fixed", bottom: 6, right: 10, fontSize: 10, opacity: 0.35, fontFamily: "'JetBrains Mono', monospace" } }, "build v10"));
   }
   function App() {
     const [identity, setIdentity] = useState(null);
@@ -623,6 +631,11 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       const t = setInterval(() => forceTick((n2) => n2 + 1), 150);
       return () => clearInterval(t);
     }, [room?.lastReveal?.timestamp]);
+    useEffect(() => {
+      if (!room?.peanutButter) return;
+      const t = setInterval(() => forceTick((n2) => n2 + 1), 150);
+      return () => clearInterval(t);
+    }, [room?.peanutButter?.timestamp]);
     const timeoutFiredForRef = useRef(null);
     useEffect(() => {
       if (!room?.pendingPlay || !identity) {
@@ -875,6 +888,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     const revealElapsed = room.lastReveal ? Date.now() - room.lastReveal.timestamp : Infinity;
     const showRevealModal = room.lastReveal && revealElapsed < 2200;
     const showFlyingCards = room.lastReveal && revealElapsed >= 1900 && revealElapsed < 3100;
+    const showPeanutButter = room.peanutButter && Date.now() - room.peanutButter.timestamp < 3200;
     let flyTarget = null;
     if (showFlyingCards) {
       const recipientIdx = displayPlayers.findIndex((p) => p.id === room.lastReveal.recipientId);
@@ -937,7 +951,16 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         }
       },
       /* @__PURE__ */ React.createElement(CardBack, { w: 40, h: 58 })
-    ))), /* @__PURE__ */ React.createElement("div", { style: { minHeight: 84, marginTop: 14 } }, room.winner ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", background: "#18291f", border: "1px solid #C6A15B", borderRadius: 12, padding: 16, animation: "floatIn 0.3s ease" } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "'Fraunces', serif", fontSize: 22, color: "#C6A15B" } }, "\u{1F3C6} ", room.players.find((p) => p.id === room.winner)?.name, " wins the table!"), isHost ? /* @__PURE__ */ React.createElement("button", { onClick: doDeal, style: { ...btnPrimary, marginTop: 12, width: "auto", padding: "10px 24px" } }, "Deal again") : /* @__PURE__ */ React.createElement("p", { style: { opacity: 0.7, marginTop: 8, marginBottom: 0 } }, "Waiting for host to deal a new round\u2026")) : pp ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", background: "#18291f", border: "1px solid #2f4a3c", borderRadius: 12, padding: 14, animation: "floatIn 0.3s ease" } }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 8 } }, /* @__PURE__ */ React.createElement("strong", null, room.players.find((x) => x.id === pp.playerId)?.name), " played ", pp.count, " card", pp.count > 1 ? "s" : "", ", claiming ", /* @__PURE__ */ React.createElement("strong", null, pp.claimedRank, "s"), "."), /* @__PURE__ */ React.createElement("div", { style: { height: 4, background: "#0f2119", borderRadius: 2, overflow: "hidden", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { height: "100%", width: `${timeLeft / (TURN_TIMEOUT_MS / 1e3) * 100}%`, background: "#C6A15B", transition: "width 1s linear" } })), iAmPlayOwner ? /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.7, fontSize: 14 } }, "Waiting to see if anyone calls BS\u2026 (", timeLeft, "s)") : iHavePassed ? /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.7, fontSize: 14 } }, "You passed \u2014 waiting on the others\u2026 (", timeLeft, "s)") : /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "center" } }, /* @__PURE__ */ React.createElement("button", { onClick: doCallBS, style: { ...btnDanger } }, "Call BS!"), /* @__PURE__ */ React.createElement("button", { onClick: doPass, style: { ...btnGhost, margin: 0 } }, "Pass"))) : /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", opacity: 0.75, paddingTop: 10 } }, mustLeadWithAce ? "Your turn \u2014 play the Ace of Spades face up to open the round." : myTurn ? "Your turn \u2014 select cards from your hand and play them." : `Waiting on ${room.players[room.turnIndex]?.name}\u2026`)), !room.winner && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 18 } }, mustLeadWithAce && !myHand.includes("A\u2660") && /* @__PURE__ */ React.createElement("div", { style: {
+    ))), showPeanutButter && /* @__PURE__ */ React.createElement("div", { style: {
+      textAlign: "center",
+      background: "#3d2f12",
+      border: "1px solid #C6A15B",
+      borderRadius: 10,
+      padding: "8px 14px",
+      marginTop: 12,
+      fontSize: 14,
+      animation: "floatIn 0.3s ease"
+    } }, "\u{1F95C} ", /* @__PURE__ */ React.createElement("strong", null, room.peanutButter.name), ' says "Peanut butter!" \u2014 that last play was a bluff that got away with it.'), /* @__PURE__ */ React.createElement("div", { style: { minHeight: 84, marginTop: 14 } }, room.winner ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", background: "#18291f", border: "1px solid #C6A15B", borderRadius: 12, padding: 16, animation: "floatIn 0.3s ease" } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "'Fraunces', serif", fontSize: 22, color: "#C6A15B" } }, "\u{1F3C6} ", room.players.find((p) => p.id === room.winner)?.name, " wins the table!"), isHost ? /* @__PURE__ */ React.createElement("button", { onClick: doDeal, style: { ...btnPrimary, marginTop: 12, width: "auto", padding: "10px 24px" } }, "Deal again") : /* @__PURE__ */ React.createElement("p", { style: { opacity: 0.7, marginTop: 8, marginBottom: 0 } }, "Waiting for host to deal a new round\u2026")) : pp ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", background: "#18291f", border: "1px solid #2f4a3c", borderRadius: 12, padding: 14, animation: "floatIn 0.3s ease" } }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 8 } }, /* @__PURE__ */ React.createElement("strong", null, room.players.find((x) => x.id === pp.playerId)?.name), " played ", pp.count, " card", pp.count > 1 ? "s" : "", ", claiming ", /* @__PURE__ */ React.createElement("strong", null, pp.claimedRank, "s"), "."), /* @__PURE__ */ React.createElement("div", { style: { height: 4, background: "#0f2119", borderRadius: 2, overflow: "hidden", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { height: "100%", width: `${timeLeft / (TURN_TIMEOUT_MS / 1e3) * 100}%`, background: "#C6A15B", transition: "width 1s linear" } })), iAmPlayOwner ? /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.7, fontSize: 14 } }, "Waiting to see if anyone calls BS\u2026 (", timeLeft, "s)") : iHavePassed ? /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.7, fontSize: 14 } }, "You passed \u2014 waiting on the others\u2026 (", timeLeft, "s)") : /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "center" } }, /* @__PURE__ */ React.createElement("button", { onClick: doCallBS, style: { ...btnDanger } }, "Call BS!"), /* @__PURE__ */ React.createElement("button", { onClick: doPass, style: { ...btnGhost, margin: 0 } }, "Pass"))) : /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", opacity: 0.75, paddingTop: 10 } }, mustLeadWithAce ? "Your turn \u2014 play the Ace of Spades face up to open the round." : myTurn ? "Your turn \u2014 select cards from your hand and play them." : `Waiting on ${room.players[room.turnIndex]?.name}\u2026`)), !room.winner && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 18 } }, mustLeadWithAce && !myHand.includes("A\u2660") && /* @__PURE__ */ React.createElement("div", { style: {
       background: "#B33A3A",
       color: "#fff",
       padding: "10px 14px",
