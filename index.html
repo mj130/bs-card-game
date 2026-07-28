@@ -453,6 +453,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         allMatch,
         actorName: playerName,
         callerName,
+        recipientId: allMatch ? callerId : pp.playerId,
+        recipientName: allMatch ? callerName : playerName,
         timestamp: Date.now()
       };
     }
@@ -539,7 +541,11 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         @keyframes stampIn { 0%{ transform: scale(2.4) rotate(-14deg); opacity:0; } 60%{ transform: scale(0.92) rotate(-14deg); opacity:1;} 100%{ transform: scale(1) rotate(-14deg); opacity:1;} }
         @keyframes flipCard { 0%{ transform: rotateY(90deg);} 100%{ transform: rotateY(0deg);} }
         @keyframes floatIn { from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
-      `), children, /* @__PURE__ */ React.createElement("div", { style: { position: "fixed", bottom: 6, right: 10, fontSize: 10, opacity: 0.35, fontFamily: "'JetBrains Mono', monospace" } }, "build v8"));
+        @keyframes flyToSeat {
+          0% { left: 50%; top: 50%; opacity: 1; transform: translate(-50%,-50%) scale(1) rotate(0deg); }
+          100% { left: var(--fly-x); top: var(--fly-y); opacity: 0; transform: translate(-50%,-50%) scale(0.55) rotate(25deg); }
+        }
+      `), children, /* @__PURE__ */ React.createElement("div", { style: { position: "fixed", bottom: 6, right: 10, fontSize: 10, opacity: 0.35, fontFamily: "'JetBrains Mono', monospace" } }, "build v9"));
   }
   function App() {
     const [identity, setIdentity] = useState(null);
@@ -612,6 +618,11 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       const t = setInterval(() => forceTick((n2) => n2 + 1), 1e3);
       return () => clearInterval(t);
     }, []);
+    useEffect(() => {
+      if (!room?.lastReveal) return;
+      const t = setInterval(() => forceTick((n2) => n2 + 1), 150);
+      return () => clearInterval(t);
+    }, [room?.lastReveal?.timestamp]);
     const timeoutFiredForRef = useRef(null);
     useEffect(() => {
       if (!room?.pendingPlay || !identity) {
@@ -861,7 +872,17 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     const iAmPlayOwner = pp && pp.playerId === identity.id;
     const iHavePassed = pp && (pp.passedBy || []).includes(identity.id);
     const timeLeft = pp ? Math.max(0, Math.ceil((TURN_TIMEOUT_MS - (Date.now() - pp.timestamp)) / 1e3)) : 0;
-    const showReveal = room.lastReveal && Date.now() - room.lastReveal.timestamp < 4200;
+    const revealElapsed = room.lastReveal ? Date.now() - room.lastReveal.timestamp : Infinity;
+    const showRevealModal = room.lastReveal && revealElapsed < 2200;
+    const showFlyingCards = room.lastReveal && revealElapsed >= 1900 && revealElapsed < 3100;
+    let flyTarget = null;
+    if (showFlyingCards) {
+      const recipientIdx = displayPlayers.findIndex((p) => p.id === room.lastReveal.recipientId);
+      if (recipientIdx >= 0) {
+        const angle = Math.PI / 2 + recipientIdx / n * 2 * Math.PI;
+        flyTarget = { x: 50 + 41 * Math.cos(angle), y: 50 + 36 * Math.sin(angle) };
+      }
+    }
     return /* @__PURE__ */ React.createElement(Shell, { bannerError: error }, /* @__PURE__ */ React.createElement("div", { style: { width: "100%", maxWidth: 640 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "'Fraunces', serif", fontSize: 26, color: "#C6A15B", margin: 0 } }, "BS."), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'JetBrains Mono', monospace", opacity: 0.6, fontSize: 13 } }, "room ", roomCode)), /* @__PURE__ */ React.createElement("div", { style: {
       position: "relative",
       width: "100%",
@@ -901,7 +922,22 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         border: isTurn ? "2px solid #C6A15B" : "2px solid transparent",
         animation: isTurn ? "pulseGlow 1.6s infinite" : "none"
       } }, p.name[0]?.toUpperCase()), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, fontWeight: isMe ? 700 : 500, textAlign: "center", maxWidth: 78, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, p.name, isMe ? " (you)" : ""), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, opacity: 0.65 } }, cardCount, " card", cardCount === 1 ? "" : "s"));
-    }), /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", textAlign: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { position: "relative", width: 54, height: 78, margin: "0 auto" } }, room.pile.length > 0 && [0, 1, 2].slice(0, Math.min(3, room.pile.length)).map((k) => /* @__PURE__ */ React.createElement(CardBack, { key: k, style: { position: "absolute", left: k * 2, top: -k * 2 } })), room.pile.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { width: 54, height: 78, borderRadius: 6, border: "2px dashed #3d5a4a", opacity: 0.5 } })), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, marginTop: 6, opacity: 0.7 } }, room.pile.length, " in pile"), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 18, color: "#C6A15B", marginTop: 6 } }, "Playing: ", room.requiredRank, "s"), !room.firstPlayMade && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 } }, /* @__PURE__ */ React.createElement(CardFace, { card: "A\u2660", small: true }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, opacity: 0.8 } }, room.players[room.turnIndex]?.name, " leads with the Ace of Spades")))), /* @__PURE__ */ React.createElement("div", { style: { minHeight: 84, marginTop: 14 } }, room.winner ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", background: "#18291f", border: "1px solid #C6A15B", borderRadius: 12, padding: 16, animation: "floatIn 0.3s ease" } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "'Fraunces', serif", fontSize: 22, color: "#C6A15B" } }, "\u{1F3C6} ", room.players.find((p) => p.id === room.winner)?.name, " wins the table!"), isHost ? /* @__PURE__ */ React.createElement("button", { onClick: doDeal, style: { ...btnPrimary, marginTop: 12, width: "auto", padding: "10px 24px" } }, "Deal again") : /* @__PURE__ */ React.createElement("p", { style: { opacity: 0.7, marginTop: 8, marginBottom: 0 } }, "Waiting for host to deal a new round\u2026")) : pp ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", background: "#18291f", border: "1px solid #2f4a3c", borderRadius: 12, padding: 14, animation: "floatIn 0.3s ease" } }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 8 } }, /* @__PURE__ */ React.createElement("strong", null, room.players.find((x) => x.id === pp.playerId)?.name), " played ", pp.count, " card", pp.count > 1 ? "s" : "", ", claiming ", /* @__PURE__ */ React.createElement("strong", null, pp.claimedRank, "s"), "."), /* @__PURE__ */ React.createElement("div", { style: { height: 4, background: "#0f2119", borderRadius: 2, overflow: "hidden", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { height: "100%", width: `${timeLeft / (TURN_TIMEOUT_MS / 1e3) * 100}%`, background: "#C6A15B", transition: "width 1s linear" } })), iAmPlayOwner ? /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.7, fontSize: 14 } }, "Waiting to see if anyone calls BS\u2026 (", timeLeft, "s)") : iHavePassed ? /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.7, fontSize: 14 } }, "You passed \u2014 waiting on the others\u2026 (", timeLeft, "s)") : /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "center" } }, /* @__PURE__ */ React.createElement("button", { onClick: doCallBS, style: { ...btnDanger } }, "Call BS!"), /* @__PURE__ */ React.createElement("button", { onClick: doPass, style: { ...btnGhost, margin: 0 } }, "Pass"))) : /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", opacity: 0.75, paddingTop: 10 } }, mustLeadWithAce ? "Your turn \u2014 play the Ace of Spades face up to open the round." : myTurn ? "Your turn \u2014 select cards from your hand and play them." : `Waiting on ${room.players[room.turnIndex]?.name}\u2026`)), !room.winner && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 18 } }, mustLeadWithAce && !myHand.includes("A\u2660") && /* @__PURE__ */ React.createElement("div", { style: {
+    }), /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", textAlign: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { position: "relative", width: 54, height: 78, margin: "0 auto" } }, room.pile.length > 0 && [0, 1, 2].slice(0, Math.min(3, room.pile.length)).map((k) => /* @__PURE__ */ React.createElement(CardBack, { key: k, style: { position: "absolute", left: k * 2, top: -k * 2 } })), room.pile.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { width: 54, height: 78, borderRadius: 6, border: "2px dashed #3d5a4a", opacity: 0.5 } })), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, marginTop: 6, opacity: 0.7 } }, room.pile.length, " in pile"), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 18, color: "#C6A15B", marginTop: 6 } }, "Playing: ", room.requiredRank, "s"), !room.firstPlayMade && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 } }, /* @__PURE__ */ React.createElement(CardFace, { card: "A\u2660", small: true }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, opacity: 0.8 } }, room.players[room.turnIndex]?.name, " leads with the Ace of Spades"))), showFlyingCards && flyTarget && room.lastReveal.cardIds.map((c, i) => /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        key: c + i,
+        style: {
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          zIndex: 20,
+          "--fly-x": `${flyTarget.x}%`,
+          "--fly-y": `${flyTarget.y}%`,
+          animation: `flyToSeat 0.9s cubic-bezier(0.3,0,0.4,1) ${i * 0.06}s both`
+        }
+      },
+      /* @__PURE__ */ React.createElement(CardBack, { w: 40, h: 58 })
+    ))), /* @__PURE__ */ React.createElement("div", { style: { minHeight: 84, marginTop: 14 } }, room.winner ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", background: "#18291f", border: "1px solid #C6A15B", borderRadius: 12, padding: 16, animation: "floatIn 0.3s ease" } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "'Fraunces', serif", fontSize: 22, color: "#C6A15B" } }, "\u{1F3C6} ", room.players.find((p) => p.id === room.winner)?.name, " wins the table!"), isHost ? /* @__PURE__ */ React.createElement("button", { onClick: doDeal, style: { ...btnPrimary, marginTop: 12, width: "auto", padding: "10px 24px" } }, "Deal again") : /* @__PURE__ */ React.createElement("p", { style: { opacity: 0.7, marginTop: 8, marginBottom: 0 } }, "Waiting for host to deal a new round\u2026")) : pp ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", background: "#18291f", border: "1px solid #2f4a3c", borderRadius: 12, padding: 14, animation: "floatIn 0.3s ease" } }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 8 } }, /* @__PURE__ */ React.createElement("strong", null, room.players.find((x) => x.id === pp.playerId)?.name), " played ", pp.count, " card", pp.count > 1 ? "s" : "", ", claiming ", /* @__PURE__ */ React.createElement("strong", null, pp.claimedRank, "s"), "."), /* @__PURE__ */ React.createElement("div", { style: { height: 4, background: "#0f2119", borderRadius: 2, overflow: "hidden", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { height: "100%", width: `${timeLeft / (TURN_TIMEOUT_MS / 1e3) * 100}%`, background: "#C6A15B", transition: "width 1s linear" } })), iAmPlayOwner ? /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.7, fontSize: 14 } }, "Waiting to see if anyone calls BS\u2026 (", timeLeft, "s)") : iHavePassed ? /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.7, fontSize: 14 } }, "You passed \u2014 waiting on the others\u2026 (", timeLeft, "s)") : /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "center" } }, /* @__PURE__ */ React.createElement("button", { onClick: doCallBS, style: { ...btnDanger } }, "Call BS!"), /* @__PURE__ */ React.createElement("button", { onClick: doPass, style: { ...btnGhost, margin: 0 } }, "Pass"))) : /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", opacity: 0.75, paddingTop: 10 } }, mustLeadWithAce ? "Your turn \u2014 play the Ace of Spades face up to open the round." : myTurn ? "Your turn \u2014 select cards from your hand and play them." : `Waiting on ${room.players[room.turnIndex]?.name}\u2026`)), !room.winner && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 18 } }, mustLeadWithAce && !myHand.includes("A\u2660") && /* @__PURE__ */ React.createElement("div", { style: {
       background: "#B33A3A",
       color: "#fff",
       padding: "10px 14px",
@@ -964,7 +1000,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         },
         /* @__PURE__ */ React.createElement(CardFace, { card })
       );
-    }), myHand.length === 0 && /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.5, padding: 20 } }, "Empty hand!"))), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 18, background: "#12211a", borderRadius: 10, padding: 12, maxHeight: 130, overflowY: "auto", fontSize: 13 } }, room.log.slice().reverse().map((l, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { opacity: 0.8, padding: "3px 0", borderBottom: i < room.log.length - 1 ? "1px solid #1e2f27" : "none" } }, l.text)), room.log.length === 0 && /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.4 } }, "Round history will appear here.")), /* @__PURE__ */ React.createElement("button", { onClick: leaveRoom, style: btnGhost }, "Leave table")), showReveal && /* @__PURE__ */ React.createElement("div", { style: {
+    }), myHand.length === 0 && /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.5, padding: 20 } }, "Empty hand!"))), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 18, background: "#12211a", borderRadius: 10, padding: 12, maxHeight: 130, overflowY: "auto", fontSize: 13 } }, room.log.slice().reverse().map((l, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { opacity: 0.8, padding: "3px 0", borderBottom: i < room.log.length - 1 ? "1px solid #1e2f27" : "none" } }, l.text)), room.log.length === 0 && /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.4 } }, "Round history will appear here.")), /* @__PURE__ */ React.createElement("button", { onClick: leaveRoom, style: btnGhost }, "Leave table")), showRevealModal && /* @__PURE__ */ React.createElement("div", { style: {
       position: "fixed",
       inset: 0,
       background: "rgba(10,18,14,0.72)",
@@ -973,7 +1009,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       justifyContent: "center",
       flexDirection: "column",
       zIndex: 50
-    } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 20 } }, room.lastReveal.cardIds.map((c, i) => /* @__PURE__ */ React.createElement("div", { key: c, style: { animation: `flipCard 0.4s ease ${i * 0.08}s both`, transformStyle: "preserve-3d" } }, /* @__PURE__ */ React.createElement(CardFace, { card: c })))), /* @__PURE__ */ React.createElement("div", { style: {
+    } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 16, marginBottom: 14, opacity: 0.95, textAlign: "center" } }, /* @__PURE__ */ React.createElement("strong", { style: { color: "#C6A15B" } }, room.lastReveal.callerName), " called BS on", " ", /* @__PURE__ */ React.createElement("strong", { style: { color: "#C6A15B" } }, room.lastReveal.actorName)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 20 } }, room.lastReveal.cardIds.map((c, i) => /* @__PURE__ */ React.createElement("div", { key: c, style: { animation: `flipCard 0.4s ease ${i * 0.08}s both`, transformStyle: "preserve-3d" } }, /* @__PURE__ */ React.createElement(CardFace, { card: c })))), /* @__PURE__ */ React.createElement("div", { style: {
       fontFamily: "'Fraunces', serif",
       fontWeight: 800,
       fontSize: 40,
@@ -984,7 +1020,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       transform: "rotate(-8deg)",
       animation: "stampIn 0.5s ease both",
       letterSpacing: 2
-    } }, room.lastReveal.allMatch ? "CLEAN CALL" : "BUSTED")));
+    } }, room.lastReveal.allMatch ? "CLEAN CALL" : "BUSTED"), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 14, fontSize: 13, opacity: 0.75 } }, room.lastReveal.recipientName, " takes the pile")));
   }
   const btnPrimary = {
     width: "100%",
