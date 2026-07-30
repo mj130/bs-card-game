@@ -386,7 +386,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
   }
   const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
   const SUITS = ["\u2660", "\u2665", "\u2666", "\u2663"];
-  const TURN_TIMEOUT_MS = 25e3;
+  const TURN_TIMEOUT_MS = 15e3;
   const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const rankOf = (card) => card.slice(0, card.length - 1);
   const suitOf = (card) => card.slice(-1);
@@ -553,7 +553,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           0% { left: 50%; top: 50%; opacity: 1; transform: translate(-50%,-50%) scale(1) rotate(0deg); }
           100% { left: var(--fly-x); top: var(--fly-y); opacity: 0; transform: translate(-50%,-50%) scale(0.55) rotate(25deg); }
         }
-      `), children, /* @__PURE__ */ React.createElement("div", { style: { position: "fixed", bottom: 6, right: 10, fontSize: 10, opacity: 0.35, fontFamily: "'JetBrains Mono', monospace" } }, "build v10"));
+      `), children, /* @__PURE__ */ React.createElement("div", { style: { position: "fixed", bottom: 6, right: 10, fontSize: 10, opacity: 0.35, fontFamily: "'JetBrains Mono', monospace" } }, "build v11"));
   }
   function App() {
     const [identity, setIdentity] = useState(null);
